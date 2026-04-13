@@ -16,7 +16,10 @@ st.set_page_config(
 # AUTH GUARD
 # ──────────────────────────────────────────────────────────────────────────────
 if not st.session_state.get("logged_in"):
-    st.switch_page("Home.py")
+    st.warning("⚠️ Please log in first.")
+    if st.button("Go to Login →"):
+        st.switch_page("Home.py")
+    st.stop()
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CSS
