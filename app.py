@@ -20,13 +20,13 @@ for k, v in [("logged_in", False), ("user_id", None), ("user_name", "")]:
 # Build page list based on auth state
 if st.session_state.logged_in:
     pages = [
-        st.Page("pages/monitor.py",   title="Monitor",   icon="🧘"),
-        st.Page("pages/analytics.py", title="Analytics", icon="📊"),
-        st.Page("pages/logout.py",    title="Logout",    icon="🚪"),
+        st.Page("monitor.py",   title="Monitor",   icon="🧘"),
+        st.Page("analytics.py", title="Analytics", icon="📊"),
+        st.Page("logout.py",    title="Logout",    icon="🚪"),
     ]
 else:
     pages = [
-        st.Page("pages/login.py", title="Login / Register", icon="🔐"),
+        st.Page("login.py", title="Login / Register", icon="🔐"),
     ]
 
 pg = st.navigation(pages, position="sidebar" if st.session_state.logged_in else "hidden")
