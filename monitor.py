@@ -9,13 +9,6 @@ from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfigurati
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-
-st.set_page_config(
-    page_title="PostureSense",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -24,10 +17,11 @@ st.markdown("""
 html,body,[data-testid="stAppViewContainer"]{background:var(--bg)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif}
 [data-testid="stSidebar"]{background:#0a0c10!important;border-right:1px solid var(--border)}
 h1,h2,h3{font-family:'Space Mono',monospace}
-#MainMenu,footer {visibility:hidden}[data-testid="stToolbar"]{display:none}
-button[kind="header"] {
-    display: block !important;
-}
+#MainMenu,footer{visibility:hidden}
+[data-testid="stToolbar"]{display:none}
+[data-testid="stHeader"]{background:transparent!important}
+header [data-testid="stDecoration"]{display:none}
+header [data-testid="stStatusWidget"]{display:none}
 .mc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;text-align:center;margin-bottom:.5rem}
 .mc .lbl{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
 .mc .val{font-family:'Space Mono',monospace;font-size:1.75rem;font-weight:700;line-height:1}
@@ -198,7 +192,7 @@ if voice_alerts and st.session_state.session_active and st.session_state.alert_c
     }})();</script>""", unsafe_allow_html=True)
 
 # ── MAIN LAYOUT ───────────────────────────────────────────────────────────────
-st.markdown(f"# 🧘 PostureSense")
+st.markdown(f"# 🧘 Monitor")
 st.markdown(f"Welcome back, **{st.session_state.get('user_name','User')}** · real-time posture monitoring")
 
 col_cam, col_stats = st.columns([3, 2], gap="large")
