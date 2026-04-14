@@ -25,6 +25,9 @@ html,body,[data-testid="stAppViewContainer"]{background:var(--bg)!important;colo
 [data-testid="stSidebar"]{background:#0a0c10!important;border-right:1px solid var(--border)}
 h1,h2,h3{font-family:'Space Mono',monospace}
 #MainMenu,footer {visibility:hidden}[data-testid="stToolbar"]{display:none}
+button[kind="header"] {
+    display: block !important;
+}
 .mc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;text-align:center;margin-bottom:.5rem}
 .mc .lbl{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
 .mc .val{font-family:'Space Mono',monospace;font-size:1.75rem;font-weight:700;line-height:1}
