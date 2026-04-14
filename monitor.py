@@ -9,9 +9,31 @@ from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfigurati
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
+
+
+st.set_page_config(initial_sidebar_state="expanded")
+
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
+
+/* Hide sidebar collapse/expand button */
+[data-testid="collapsedControl"] {
+    display: none !important;
+}
+
+/* Force sidebar to always stay visible */
+section[data-testid="stSidebar"] {
+    display: block !important;
+    width: 300px !important;
+}
+
+/* Prevent sidebar from collapsing */
+[data-testid="stSidebar"][aria-expanded="false"] {
+    min-width: 300px !important;
+    max-width: 300px !important;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap');
 :root{--good:#00e676;--warn:#ffea00;--bad:#ff1744;--bg:#0d0f14;--card:#161922;--border:#1e2230;--text:#e8eaf0;--muted:#6b7280;--accent:#6c63ff}
 html,body,[data-testid="stAppViewContainer"]{background:var(--bg)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif}
