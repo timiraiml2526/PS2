@@ -198,7 +198,7 @@ if voice_alerts and st.session_state.session_active and st.session_state.alert_c
     }})();</script>""", unsafe_allow_html=True)
 
 # ── MAIN LAYOUT ───────────────────────────────────────────────────────────────
-st.markdown(f"# 🧘 Monitor")
+st.markdown(f"# 🧘 PostureSense")
 st.markdown(f"Welcome back, **{st.session_state.get('user_name','User')}** · real-time posture monitoring")
 
 col_cam, col_stats = st.columns([3, 2], gap="large")
