@@ -10,7 +10,11 @@ st.markdown("""
 html,body,[data-testid="stAppViewContainer"]{background:var(--bg)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif}
 [data-testid="stSidebar"]{background:#0a0c10!important;border-right:1px solid var(--border)}
 h1,h2,h3,h4{font-family:'Space Mono',monospace}
-#MainMenu,footer,header{visibility:hidden}[data-testid="stToolbar"]{display:none}
+#MainMenu,footer{visibility:hidden}
+[data-testid="stToolbar"]{display:none}
+[data-testid="stHeader"]{background:transparent!important}
+header [data-testid="stDecoration"]{display:none}
+header [data-testid="stStatusWidget"]{display:none}
 .mc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.3rem;text-align:center;margin-bottom:.6rem}
 .mc .lbl{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
 .mc .val{font-family:'Space Mono',monospace;font-size:2rem;font-weight:700;line-height:1}
