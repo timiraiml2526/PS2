@@ -10,7 +10,11 @@ st.markdown("""
 :root{--bg:#0d0f14;--card:#161922;--border:#1e2230;--text:#e8eaf0;--muted:#6b7280;--accent:#6c63ff}
 html,body,[data-testid="stAppViewContainer"]{background:var(--bg)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif}
 [data-testid="stSidebar"]{display:none!important}
-#MainMenu,footer,header{visibility:hidden}[data-testid="stToolbar"]{display:none}
+#MainMenu,footer{visibility:hidden}
+[data-testid="stToolbar"]{display:none}
+[data-testid="stHeader"]{background:transparent!important}
+header [data-testid="stDecoration"]{display:none}
+header [data-testid="stStatusWidget"]{display:none}
 h1,h2,h3{font-family:'Space Mono',monospace}
 .auth-wrap{max-width:440px;margin:3rem auto 0;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .auth-logo{text-align:center;font-family:'Space Mono',monospace;font-size:2rem;font-weight:700;margin-bottom:.2rem}
