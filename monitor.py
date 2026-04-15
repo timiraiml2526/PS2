@@ -15,7 +15,8 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap');
 :root{--good:#00e676;--warn:#ffea00;--bad:#ff1744;--bg:#0d0f14;--card:#161922;--border:#1e2230;--text:#e8eaf0;--muted:#6b7280;--accent:#6c63ff}
 html,body,[data-testid="stAppViewContainer"]{background:var(--bg)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif}
-[data-testid="stSidebar"]{background:#0a0c10!important;border-right:1px solid var(--border)}
+[data-testid="stSidebar"]{display:none!important}
+[data-testid="stSidebarCollapsedControl"]{display:none!important}
 h1,h2,h3{font-family:'Space Mono',monospace}
 #MainMenu,footer{visibility:hidden}
 [data-testid="stToolbar"]{display:none}
@@ -33,6 +34,7 @@ header [data-testid="stStatusWidget"]{display:none}
 .pi{background:rgba(107,114,128,.15);color:var(--muted);border:1px solid rgba(107,114,128,.3)}
 .sh{font-family:'Space Mono',monospace;font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:.3rem;margin:1rem 0 .65rem}
 .tip{background:linear-gradient(135deg,#161922 60%,#1a1f2e);border-left:3px solid var(--good);border-radius:0 8px 8px 0;padding:.7rem .9rem;font-size:.85rem;color:#b0bcc8;margin-bottom:.4rem}
+.settings-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem}
 .red-overlay{position:fixed;inset:0;pointer-events:none;z-index:9999;animation:pr 1s ease-in-out infinite alternate}
 @keyframes pr{from{background:rgba(255,23,68,.08)}to{background:rgba(255,23,68,.26)}}
 .stButton>button{border-radius:8px!important;font-weight:600!important}
@@ -55,7 +57,9 @@ _S = st._ps
 for k, v in [("session_active", False), ("session_start", None),
              ("total_good", 0), ("total_warn", 0), ("total_bad", 0),
              ("alert_count", 0), ("last_alert_time", 0),
-             ("history", deque(maxlen=180))]:
+             ("history", deque(maxlen=180)),
+             ("sens", "Medium"), ("voice_alerts", True),
+             ("red_overlay_on", True), ("alert_cooldown", 15)]:
     if k not in st.session_state:
         st.session_state[k] = v
 
@@ -87,7 +91,7 @@ class PostureProcessor(VideoProcessorBase):
             h, w, _ = img.shape
             l_shldr, r_shldr = lms[11], lms[12]
             l_ear,   r_ear   = lms[7],  lms[8]
-            tilt = abs(l_shldr.y - r_shldr.y)
+            tilt  = abs(l_shldr.y - r_shldr.y)
             score = (l_shldr.y + r_shldr.y) / 2 - (l_ear.y + r_ear.y) / 2
 
             with _S["lock"]:
@@ -130,77 +134,28 @@ class PostureProcessor(VideoProcessorBase):
 with _S["lock"]:
     posture_now = _S["posture"]
 
-# ── SIDEBAR ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown(f"## 🧘 PostureSense")
-    st.markdown(f"👤 **{st.session_state.get('user_name','User')}**")
-    st.markdown("<div class='sh'>Detection Settings</div>", unsafe_allow_html=True)
-
-    sens = st.select_slider("Shoulder tilt sensitivity",
-                            options=["Low","Medium","High"], value="Medium")
-    with _S["lock"]:
-        _S["bad_thresh"], _S["warn_thresh"] = \
-            {"Low":(0.13,0.10),"Medium":(0.10,0.075),"High":(0.07,0.05)}[sens]
-
-    st.markdown("<div class='sh'>Alert Settings</div>", unsafe_allow_html=True)
-    voice_alerts   = st.toggle("🔊 Voice alerts",     value=True)
-    red_overlay_on = st.toggle("🔴 Red screen flash", value=True)
-    alert_cooldown = st.slider("Alert cooldown (sec)", 5, 60, 15)
-
-    st.markdown("<div class='sh'>Quick Tips</div>", unsafe_allow_html=True)
-    for tip in ["Keep shoulders level and relaxed.",
-                "Ears should align over shoulders.",
-                "Sit with hips pushed back in chair.",
-                "Screen at eye level, arm's length away.",
-                "Take a break every 30 minutes."]:
-        st.markdown(f"<div class='tip'>💡 {tip}</div>", unsafe_allow_html=True)
-
-# ── UPDATE COUNTERS ───────────────────────────────────────────────────────────
-def _update_counters(posture_now, alert_cooldown):
-    if st.session_state.session_active and posture_now not in ("Waiting…","No Pose"):
+# ── COUNTER HELPER ────────────────────────────────────────────────────────────
+def _update_counters(posture, cooldown):
+    if st.session_state.session_active and posture not in ("Waiting…", "No Pose"):
         now = time.time()
-        if posture_now == "Good Posture":    st.session_state.total_good += 1
-        elif posture_now == "Slightly Bent": st.session_state.total_warn += 1
-        elif posture_now == "Bad Posture":   st.session_state.total_bad  += 1
-        st.session_state.history.append(posture_now)
-        if posture_now == "Bad Posture":
-            if now - st.session_state.last_alert_time > alert_cooldown:
+        if posture == "Good Posture":    st.session_state.total_good += 1
+        elif posture == "Slightly Bent": st.session_state.total_warn += 1
+        elif posture == "Bad Posture":   st.session_state.total_bad  += 1
+        st.session_state.history.append(posture)
+        if posture == "Bad Posture":
+            if now - st.session_state.last_alert_time > cooldown:
                 st.session_state.last_alert_time = now
                 st.session_state.alert_count    += 1
 
-_update_counters(posture_now, alert_cooldown)
-
-# ── VOICE ALERT (JS SpeechSynthesis) ─────────────────────────────────────────
-st.markdown("""
-<div id="_ps_vtrig" data-key="0"></div>
-<script>(function(){
-  var last="0";
-  function fire(el){var k=el.getAttribute("data-key");if(k&&k!==last){last=k;
-    window.speechSynthesis.cancel();
-    var u=new SpeechSynthesisUtterance("Bad posture detected! Please sit up straight.");
-    u.rate=0.95;u.pitch=1;u.volume=1;window.speechSynthesis.speak(u);}}
-  var el=document.getElementById("_ps_vtrig");
-  if(el)new MutationObserver(function(){fire(el);}).observe(el,{attributes:true});
-  else document.addEventListener("DOMContentLoaded",function(){
-    var e2=document.getElementById("_ps_vtrig");
-    if(e2)new MutationObserver(function(){fire(e2);}).observe(e2,{attributes:true});});
-})();</script>
-""", unsafe_allow_html=True)
-
-if voice_alerts and st.session_state.session_active and st.session_state.alert_count > 0:
-    ak = str(st.session_state.alert_count)
-    st.markdown(f"""<script>(function(){{
-      var el=document.getElementById("_ps_vtrig");
-      if(el)el.setAttribute("data-key","{ak}");
-    }})();</script>""", unsafe_allow_html=True)
-
-# ── MAIN LAYOUT ───────────────────────────────────────────────────────────────
-st.markdown(f"# 🧘 PotureSense")
+# ── PAGE HEADER ───────────────────────────────────────────────────────────────
+st.markdown(f"# 🧘 PostureSense")
 st.markdown(f"Welcome back, **{st.session_state.get('user_name','User')}** · real-time posture monitoring")
 
+# ── MAIN LAYOUT: camera | stats ───────────────────────────────────────────────
 col_cam, col_stats = st.columns([3, 2], gap="large")
 
 with col_cam:
+    # Session buttons
     bc1, bc2, bc3 = st.columns(3)
     with bc1:
         if st.button("▶ Start Session", use_container_width=True, type="primary"):
@@ -234,16 +189,77 @@ with col_cam:
         async_processing=True,
     )
 
-    if red_overlay_on and posture_now == "Bad Posture" and st.session_state.session_active:
-        st.markdown("<div class='red-overlay'></div>", unsafe_allow_html=True)
+    # ── INLINE SETTINGS PANEL (replaces sidebar) ──────────────────────────────
+    st.markdown("<div class='sh'>⚙️ Detection Settings</div>", unsafe_allow_html=True)
+    with st.container():
+        sens = st.select_slider(
+            "Shoulder tilt sensitivity",
+            options=["Low", "Medium", "High"],
+            value=st.session_state.sens,
+            key="sens_slider"
+        )
+        st.session_state.sens = sens
+        with _S["lock"]:
+            _S["bad_thresh"], _S["warn_thresh"] = \
+                {"Low":(0.13,0.10),"Medium":(0.10,0.075),"High":(0.07,0.05)}[sens]
 
+    st.markdown("<div class='sh'>🔔 Alert Settings</div>", unsafe_allow_html=True)
+    al1, al2 = st.columns(2)
+    with al1:
+        voice_alerts = st.toggle("🔊 Voice alerts",
+                                 value=st.session_state.voice_alerts,
+                                 key="voice_toggle")
+        st.session_state.voice_alerts = voice_alerts
+    with al2:
+        red_overlay_on = st.toggle("🔴 Red screen flash",
+                                   value=st.session_state.red_overlay_on,
+                                   key="overlay_toggle")
+        st.session_state.red_overlay_on = red_overlay_on
+
+    alert_cooldown = st.slider("Alert cooldown (sec)", 5, 60,
+                               value=st.session_state.alert_cooldown,
+                               key="cooldown_slider")
+    st.session_state.alert_cooldown = alert_cooldown
+
+    st.markdown("<div class='sh'>💡 Quick Tips</div>", unsafe_allow_html=True)
+    for tip in ["Keep shoulders level and relaxed.",
+                "Ears should align over shoulders.",
+                "Sit with hips pushed back in chair.",
+                "Screen at eye level, arm's length away.",
+                "Take a break every 30 minutes."]:
+        st.markdown(f"<div class='tip'>💡 {tip}</div>", unsafe_allow_html=True)
+
+# ── VOICE ALERT (JS SpeechSynthesis) ─────────────────────────────────────────
+st.markdown("""
+<div id="_ps_vtrig" data-key="0"></div>
+<script>(function(){
+  var last="0";
+  function fire(el){var k=el.getAttribute("data-key");if(k&&k!==last){last=k;
+    window.speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance("Bad posture detected! Please sit up straight.");
+    u.rate=0.95;u.pitch=1;u.volume=1;window.speechSynthesis.speak(u);}}
+  var el=document.getElementById("_ps_vtrig");
+  if(el)new MutationObserver(function(){fire(el);}).observe(el,{attributes:true});
+  else document.addEventListener("DOMContentLoaded",function(){
+    var e2=document.getElementById("_ps_vtrig");
+    if(e2)new MutationObserver(function(){fire(e2);}).observe(e2,{attributes:true});});
+})();</script>
+""", unsafe_allow_html=True)
+
+if voice_alerts and st.session_state.session_active and st.session_state.alert_count > 0:
+    ak = str(st.session_state.alert_count)
+    st.markdown(f"""<script>(function(){{
+      var el=document.getElementById("_ps_vtrig");
+      if(el)el.setAttribute("data-key","{ak}");
+    }})();</script>""", unsafe_allow_html=True)
+
+# ── LIVE STATS (auto-refreshing fragment) ─────────────────────────────────────
 @st.fragment(run_every=1)
 def _live_stats_panel():
     with _S["lock"]:
         posture_live = _S["posture"]
 
-    # update counters inside fragment so sidebar is never re-run
-    _update_counters(posture_live, alert_cooldown)
+    _update_counters(posture_live, st.session_state.alert_cooldown)
 
     pill = {"Good Posture":"pg","Slightly Bent":"pw","Bad Posture":"pb"}.get(posture_live,"pi")
     st.markdown("<div class='sh'>Live Status</div>", unsafe_allow_html=True)
@@ -311,8 +327,7 @@ def _live_stats_panel():
         elif good_pct >= 60: st.warning("👍 Decent. More mindfulness needed.")
         else:                st.error("⚠️ Posture needs attention. Check Analytics for tips.")
 
-    # red overlay lives here so it also only re-renders in-fragment
-    if red_overlay_on and posture_live == "Bad Posture" and st.session_state.session_active:
+    if st.session_state.red_overlay_on and posture_live == "Bad Posture" and st.session_state.session_active:
         st.markdown("<div class='red-overlay'></div>", unsafe_allow_html=True)
 
 with col_stats:
