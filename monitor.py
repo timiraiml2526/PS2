@@ -9,31 +9,9 @@ from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfigurati
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-
-
-st.set_page_config(initial_sidebar_state="expanded")
-
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-
-/* Hide sidebar collapse/expand button */
-[data-testid="collapsedControl"] {
-    display: none !important;
-}
-
-/* Force sidebar to always stay visible */
-section[data-testid="stSidebar"] {
-    display: block !important;
-    width: 300px !important;
-}
-
-/* Prevent sidebar from collapsing */
-[data-testid="stSidebar"][aria-expanded="false"] {
-    min-width: 300px !important;
-    max-width: 300px !important;
-}
-
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap');
 :root{--good:#00e676;--warn:#ffea00;--bad:#ff1744;--bg:#0d0f14;--card:#161922;--border:#1e2230;--text:#e8eaf0;--muted:#6b7280;--accent:#6c63ff}
 html,body,[data-testid="stAppViewContainer"]{background:var(--bg)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif}
@@ -178,16 +156,19 @@ with st.sidebar:
         st.markdown(f"<div class='tip'>💡 {tip}</div>", unsafe_allow_html=True)
 
 # ── UPDATE COUNTERS ───────────────────────────────────────────────────────────
-if st.session_state.session_active and posture_now not in ("Waiting…","No Pose"):
-    now = time.time()
-    if posture_now == "Good Posture":    st.session_state.total_good += 1
-    elif posture_now == "Slightly Bent": st.session_state.total_warn += 1
-    elif posture_now == "Bad Posture":   st.session_state.total_bad  += 1
-    st.session_state.history.append(posture_now)
-    if posture_now == "Bad Posture":
-        if now - st.session_state.last_alert_time > alert_cooldown:
-            st.session_state.last_alert_time = now
-            st.session_state.alert_count    += 1
+def _update_counters(posture_now, alert_cooldown):
+    if st.session_state.session_active and posture_now not in ("Waiting…","No Pose"):
+        now = time.time()
+        if posture_now == "Good Posture":    st.session_state.total_good += 1
+        elif posture_now == "Slightly Bent": st.session_state.total_warn += 1
+        elif posture_now == "Bad Posture":   st.session_state.total_bad  += 1
+        st.session_state.history.append(posture_now)
+        if posture_now == "Bad Posture":
+            if now - st.session_state.last_alert_time > alert_cooldown:
+                st.session_state.last_alert_time = now
+                st.session_state.alert_count    += 1
+
+_update_counters(posture_now, alert_cooldown)
 
 # ── VOICE ALERT (JS SpeechSynthesis) ─────────────────────────────────────────
 st.markdown("""
@@ -214,7 +195,7 @@ if voice_alerts and st.session_state.session_active and st.session_state.alert_c
     }})();</script>""", unsafe_allow_html=True)
 
 # ── MAIN LAYOUT ───────────────────────────────────────────────────────────────
-st.markdown(f"# 🧘 Monitor")
+st.markdown(f"# 🧘 PotureSense")
 st.markdown(f"Welcome back, **{st.session_state.get('user_name','User')}** · real-time posture monitoring")
 
 col_cam, col_stats = st.columns([3, 2], gap="large")
@@ -256,10 +237,17 @@ with col_cam:
     if red_overlay_on and posture_now == "Bad Posture" and st.session_state.session_active:
         st.markdown("<div class='red-overlay'></div>", unsafe_allow_html=True)
 
-with col_stats:
+@st.fragment(run_every=1)
+def _live_stats_panel():
+    with _S["lock"]:
+        posture_live = _S["posture"]
+
+    # update counters inside fragment so sidebar is never re-run
+    _update_counters(posture_live, alert_cooldown)
+
+    pill = {"Good Posture":"pg","Slightly Bent":"pw","Bad Posture":"pb"}.get(posture_live,"pi")
     st.markdown("<div class='sh'>Live Status</div>", unsafe_allow_html=True)
-    pill = {"Good Posture":"pg","Slightly Bent":"pw","Bad Posture":"pb"}.get(posture_now,"pi")
-    st.markdown(f"<span class='pill {pill}'>{posture_now}</span>", unsafe_allow_html=True)
+    st.markdown(f"<span class='pill {pill}'>{posture_live}</span>", unsafe_allow_html=True)
 
     elapsed = "--:--"
     if st.session_state.session_start:
@@ -323,7 +311,9 @@ with col_stats:
         elif good_pct >= 60: st.warning("👍 Decent. More mindfulness needed.")
         else:                st.error("⚠️ Posture needs attention. Check Analytics for tips.")
 
-# ── AUTO-REFRESH ──────────────────────────────────────────────────────────────
-if st.session_state.session_active:
-    time.sleep(1)
-    st.rerun()
+    # red overlay lives here so it also only re-renders in-fragment
+    if red_overlay_on and posture_live == "Bad Posture" and st.session_state.session_active:
+        st.markdown("<div class='red-overlay'></div>", unsafe_allow_html=True)
+
+with col_stats:
+    _live_stats_panel()
