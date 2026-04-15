@@ -38,6 +38,10 @@ header [data-testid="stStatusWidget"]{display:none}
 .red-overlay{position:fixed;inset:0;pointer-events:none;z-index:9999;animation:pr 1s ease-in-out infinite alternate}
 @keyframes pr{from{background:rgba(255,23,68,.08)}to{background:rgba(255,23,68,.26)}}
 .stButton>button{border-radius:8px!important;font-weight:600!important}
+.nav-btn>button{background:var(--card)!important;border:1px solid var(--border)!important;color:var(--text)!important;font-size:.82rem!important;padding:.3rem .85rem!important;border-radius:8px!important;font-weight:600!important;transition:all .2s}
+.nav-btn>button:hover{border-color:var(--accent)!important;color:var(--accent)!important}
+.logout-btn>button{background:rgba(255,23,68,.10)!important;border:1px solid rgba(255,23,68,.35)!important;color:#ff1744!important;font-size:.82rem!important;padding:.3rem .85rem!important;border-radius:8px!important;font-weight:600!important;transition:all .2s}
+.logout-btn>button:hover{background:rgba(255,23,68,.22)!important}
 </style>
 """, unsafe_allow_html=True)
 
@@ -148,8 +152,20 @@ def _update_counters(posture, cooldown):
                 st.session_state.alert_count    += 1
 
 # ── PAGE HEADER ───────────────────────────────────────────────────────────────
-st.markdown(f"# 🧘 PostureSense")
-st.markdown(f"Welcome back, **{st.session_state.get('user_name','User')}** · real-time posture monitoring")
+hdr_left, hdr_right = st.columns([5, 1], gap="small")
+with hdr_left:
+    st.markdown(f"# 🧘 Monitor")
+    st.markdown(f"Welcome back, **{st.session_state.get('user_name','User')}** · real-time posture monitoring")
+with hdr_right:
+    st.markdown("<div style='height:1.1rem'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='nav-btn'>", unsafe_allow_html=True)
+    if st.button("📊 Analytics", use_container_width=True, key="nav_analytics"):
+        st.switch_page("analytics.py")
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div class='logout-btn'>", unsafe_allow_html=True)
+    if st.button("🚪 Logout", use_container_width=True, key="nav_logout"):
+        st.switch_page("logout.py")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # ── MAIN LAYOUT: camera | stats ───────────────────────────────────────────────
 col_cam, col_stats = st.columns([3, 2], gap="large")
