@@ -56,7 +56,10 @@ good_pct = round(total_good / total * 100) if total else 0
 warn_pct = round(total_warn / total * 100) if total else 0
 bad_pct  = round(total_bad  / total * 100) if total else 0
 
-dur = int(time.time() - session_start) if session_start else 0
+if st.session_state.session_active:
+    dur = int(time.time() - st.session_state.session_start)
+else:
+    dur = int(st.session_state.session_end - st.session_state.session_start)
 dur_str  = f"{dur//3600:02d}:{(dur%3600)//60:02d}:{dur%60:02d}"
 good_sec = round(total_good / total * dur) if total else 0
 bad_sec  = round(total_bad  / total * dur) if total else 0
