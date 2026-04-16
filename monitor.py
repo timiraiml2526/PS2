@@ -154,7 +154,7 @@ def _update_counters(posture, cooldown):
 # ── PAGE HEADER ───────────────────────────────────────────────────────────────
 hdr_left, hdr_right = st.columns([5, 1], gap="small")
 with hdr_left:
-    st.markdown(f"# 🧘 Monitor")
+    st.markdown(f"# 🧘 PostureSense")
     st.markdown(f"Welcome back, **{st.session_state.get('user_name','User')}** · real-time posture monitoring")
 with hdr_right:
     st.markdown("<div style='height:1.1rem'></div>", unsafe_allow_html=True)
@@ -176,13 +176,18 @@ with col_cam:
     with bc1:
         if st.button("▶ Start Session", use_container_width=True, type="primary"):
             st.session_state.update(
-                session_active=True, session_start=time.time(),
+                session_active=True,
+                session_start=time.time(),
+                session_end=None,   # ✅ RESET
                 total_good=0, total_warn=0, total_bad=0,
-                alert_count=0, last_alert_time=0, history=deque(maxlen=180))
+                alert_count=0, last_alert_time=0,
+                history=deque(maxlen=120)
+            )
             st.rerun()
     with bc2:
         if st.button("⏹ Stop Session", use_container_width=True):
             st.session_state.session_active = False
+            st.session_state.session_end = time.time()   # ✅ SAVE STOP TIME
             st.rerun()
     with bc3:
         if st.button("🎯 Calibrate", use_container_width=True,
@@ -283,7 +288,11 @@ def _live_stats_panel():
 
     elapsed = "--:--"
     if st.session_state.session_start:
-        s = int(time.time() - st.session_state.session_start)
+        if st.session_state.session_active:
+            s = int(time.time() - st.session_state.session_start)
+        else:
+            s = int(st.session_state.session_end - st.session_state.session_start)
+
         sfx = "" if st.session_state.session_active else " (ended)"
         elapsed = f"{s//60:02d}:{s%60:02d}{sfx}"
 
@@ -328,7 +337,10 @@ def _live_stats_panel():
 
     if not st.session_state.session_active and st.session_state.session_start and total > 0:
         st.markdown("<div class='sh'>📋 Session Summary</div>", unsafe_allow_html=True)
-        dur = int(time.time() - st.session_state.session_start)
+        if st.session_state.session_active:
+            dur = int(time.time() - st.session_state.session_start)
+        else:
+            dur = int(st.session_state.session_end - st.session_state.session_start)
         gs  = round(st.session_state.total_good / total * dur)
         bs  = round(st.session_state.total_bad  / total * dur)
         grade = ("🏆 Excellent" if good_pct>=80 else "👍 Good" if good_pct>=60
